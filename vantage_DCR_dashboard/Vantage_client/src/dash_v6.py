@@ -17,7 +17,7 @@ import miscellaneous
 import vantage_client
 
 # Set a global variable for the font
-GLOBAL_FONT = "Titillium Web, sans-serif"
+GLOBAL_FONT = "Times New Roman, sans-serif"
 
 class Dashboard:
     def __init__(self):
@@ -187,10 +187,10 @@ class Dashboard:
                             options=[{'label': roi_label, 'value': roi_value} for roi_label, roi_value in
                                      self.roi_names.items()],
                             value=tuple(self.roi_names.values())[0],  # Initially select first
-                            style={'marginRight': '20px', 'marginTop': '22px', 'fontSize': '18px', 'font-family': GLOBAL_FONT},  # Add some spacing between checkboxes
+                            style={'marginRight': '20px', 'marginTop': '22px', 'fontSize': '18px', 'font-family': GLOBAL_FONT},  # Add some spacing between checkboxes,
                         ),
-                    ], style={'flex': '0.4', 'fontSize': '18px', 'font-family': GLOBAL_FONT}),
-                ], style={'display': 'flex', 'flexDirection': 'row', 'vertical-align': 'top'}),
+                    ], style={'flex': '0.4', 'fontSize': '18px', 'font-family': GLOBAL_FONT, 'background-color': '#f9f4ea'}),
+                ], style={'display': 'flex', 'flexDirection': 'row', 'vertical-align': 'top', 'background-color': '#f9f4ea'}),
 
                 html.Div(id='heatmap-content'),
             ])
@@ -278,7 +278,11 @@ class Dashboard:
             # create a pie chart
             fig_pie = px.pie(filtered_data, names='Categories', values='Values',
                          color_discrete_sequence=color_sequence)
-            fig_pie.update_layout(font=dict(family=GLOBAL_FONT))
+            fig_pie.update_layout(
+                plot_bgcolor='#f9f4ea',
+                paper_bgcolor='#f9f4ea',
+                font=dict(family=GLOBAL_FONT)
+            )
             pie_chart = dcc.Graph(figure=fig_pie)
 
             # elif tab == 'tab-scatter':
@@ -292,7 +296,11 @@ class Dashboard:
             # create a bar chart
             fig_bar = px.bar(bar_data, x='Scanners', y='Counts',
                          color_discrete_sequence=self.ColourSchemeCategorical)
-            #fig_bar.update_layout(font=dict(family=GLOBAL_FONT))
+            fig_bar.update_layout(
+                plot_bgcolor='#f9f4ea',
+                paper_bgcolor='#f9f4ea',
+                font=dict(family=GLOBAL_FONT)
+            )
 
             bar_chart = dcc.Graph(figure=fig_bar)
 
@@ -352,7 +360,11 @@ class Dashboard:
             fig_heatmap.update_xaxes(
                 tickfont=dict(size=7),  # font size of the x-axis labels
             )
-            #fig_heatmap.update_layout(autosize=True, font=dict(size=7,))
+            fig_heatmap.update_layout(
+                plot_bgcolor='#f9f4ea',
+                paper_bgcolor='#f9f4ea',
+                font=dict(family=GLOBAL_FONT)
+            )
             return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'})
 
 

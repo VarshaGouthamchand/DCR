@@ -1,18 +1,13 @@
 import pandas as pd
-import plotly.express as px
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import plotly.graph_objs as go
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly
+import plotly.io as pio
+
 
 ### REGULARIZATION PATH ####
 # Read the CSV file with Lasso results
  
-df = pd.read_csv('C:\\Users\\P70070487\\OneDrive - Maastro\\DCR\\DCR_models\\DCR_models\\DCR results\\CLin_oro_Train1_3nodes\\lasso_path_DM.csv')
+df = pd.read_csv('lasso_path_DM.csv')
  
 df2 = df.T
 df2.columns = df2.iloc[0]
@@ -20,7 +15,7 @@ df2 = df2.drop(df2.index[0])
 df2.index = [str(round(el,4)) for el in df2.index.astype(float)]
  
  
-color = ['#d7191c','#fdae61','#ffffbf','#abd9e9','#2c7bb6']
+# color = ['#d7191c','#fdae61','#ffffbf','#abd9e9','#2c7bb6']
 color = ['#377eb8', '#ff7f00', '#4daf4a', '#f781bf',  '#984ea3', '#999999', '#e41a1c', '#dede00']
  
 marks = [
@@ -37,7 +32,7 @@ marks = [
  
 layout = go.Layout( paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    title='Regularization path',
+    title='Regularization path of clinical variables for DM (Loop 2)',
     xaxis=dict(title='Regularization parameter ($\lambda$)'),
     yaxis=dict(title='Coefficients'),
     font=dict(family='Times New Roman', size=16),
@@ -59,4 +54,14 @@ fig.update_layout(title_x=0.5, legend=dict(
     x=0.01
 ))
 fig.data[1].update(xaxis='x2')
-fig.show()
+config = {
+    'toImageButtonOptions': {
+        'format': 'png',  # one of png, svg, jpeg, webp
+        'filename': 'lasso_clin_DM_loop2',
+        'height': 600,
+        'width': 1000,
+        'scale': 3  # Multiply title/legend/axis/canvas sizes by this factor
+    }
+}
+fig.show(config=config)
+#fig.show()
