@@ -279,11 +279,11 @@ class Dashboard:
             fig_pie = px.pie(filtered_data, names='Categories', values='Values',
                          color_discrete_sequence=color_sequence)
             fig_pie.update_layout(
-                plot_bgcolor='#f9f4ea',
+                plot_bgcolor='lightgrey',
                 paper_bgcolor='#f9f4ea',
                 font=dict(family=GLOBAL_FONT)
             )
-            pie_chart = dcc.Graph(figure=fig_pie)
+            pie_chart = dcc.Graph(figure=fig_pie, className='graph-shadow')
 
             # elif tab == 'tab-scatter':
             #     Create a scatter plot
@@ -297,12 +297,12 @@ class Dashboard:
             fig_bar = px.bar(bar_data, x='Scanners', y='Counts',
                          color_discrete_sequence=self.ColourSchemeCategorical)
             fig_bar.update_layout(
-                plot_bgcolor='#f9f4ea',
+                plot_bgcolor='lightgrey',
                 paper_bgcolor='#f9f4ea',
                 font=dict(family=GLOBAL_FONT)
             )
 
-            bar_chart = dcc.Graph(figure=fig_bar)
+            bar_chart = dcc.Graph(figure=fig_bar, className='graph-shadow')
 
             return pie_chart, bar_chart
 
@@ -361,11 +361,11 @@ class Dashboard:
                 tickfont=dict(size=7),  # font size of the x-axis labels
             )
             fig_heatmap.update_layout(
-                plot_bgcolor='#f9f4ea',
+                plot_bgcolor='lightgrey',
                 paper_bgcolor='#f9f4ea',
                 font=dict(family=GLOBAL_FONT)
             )
-            return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'})
+            return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'}, className='graph-shadow')
 
 
     def run(self, debug=None, port=8050):
