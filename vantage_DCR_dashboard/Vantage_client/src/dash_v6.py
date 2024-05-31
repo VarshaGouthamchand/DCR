@@ -9,7 +9,6 @@ import pandas as pd
 from dash import html
 from dash import dcc
 from dash.dependencies import Input, Output, State
-import dash_bootstrap_components as dbc
 import scipy.cluster.hierarchy as sch
 
 # private module
@@ -18,6 +17,7 @@ import vantage_client
 
 # Set a global variable for the font
 GLOBAL_FONT = "Times New Roman, sans-serif"
+
 
 class Dashboard:
     def __init__(self):
@@ -33,17 +33,16 @@ class Dashboard:
         # currently names have to be changed to match specific node names
         self.OrganisationsNames = ['HN1_Maastro', 'Montreal', 'Toronto', 'HN3_Maastro', 'HCG', 'TMH']
         self.Organisations_ids_to_query = []
+
         self.roi_names = {'GTV Primary': 'C100346',
                           'GTV Node': 'C100347'}
 
         self.codedict = {
-        "C00000": "Unknown", "C48737": "Tx", "C48719": "T0", "C48720": "T1", "C48724": "T2", "C20197": "Male", "C16576": "Female",
-        "C48728": "T3", "C48732": "T4", "C48705": "N0", "C48706": "N1", "C48786": "N2", "C48714": "N3",
-        "C28554": "Dead", "C37987": "Censored", "C128839": "HPV Positive", "C100346": "Primary", "C100347": "Node",
-        "C12762": "Oropharynx", "C12420": "Larynx", "C12246": "Hypopharynx", "C12423": "Nasopharynx",
-        "C12421": "Oral cavity", "C150211": "Larynx", "C4044": "Larynx", "C20000": 1, "C30000": 0, "C40000": 1, "C50000": 0}
-
-
+            "C00000": "Unknown", "C48737": "Tx", "C48719": "T0", "C48720": "T1", "C48724": "T2", "C20197": "Male",
+            "C16576": "Female", "C48728": "T3", "C48732": "T4", "C48705": "N0", "C48706": "N1", "C48786": "N2", "C48714": "N3",
+            "C28554": "Dead", "C37987": "Censored", "C128839": "HPV Positive", "C100346": "Primary", "C100347": "Node",
+            "C12762": "Oropharynx", "C12420": "Larynx", "C12246": "Hypopharynx", "C12423": "Nasopharynx", "C12421": "Oral cavity",
+            "C150211": "Larynx", "C4044": "Larynx", "C20000": 1, "C30000": 0, "C40000": 1, "C50000": 0}
 
         self.filter_dict = {'roo:P100018': ['C16576', 'C20197'],
                             'roo:P100244': ['C48719', 'C48720', 'C48724', 'C48728', 'C48732'],
@@ -70,10 +69,16 @@ class Dashboard:
         self._PlaceholderDataHeatMap = {}
         self.PlaceholderDataFrameHeatMap, temp_dict = miscellaneous.convert_heatmap_to_appropriate_dataframe(
             pd.DataFrame(np.random.rand(10, 10), columns=[f'Column_{i}' for i in range(10)]),
-            self.Organisations_ids_to_query,
-            tuple(self.roi_names.values())[0])
+            self.Organisations_ids_to_query, tuple(self.roi_names.values())[0])
 
         self._PlaceholderDataHeatMap.update(temp_dict)
+
+        # Define the number of box plots and the number of data points for each boxplot (dummy)
+        num_boxplot = 6
+        num_data_points = 50
+
+        self._PlaceholderDataFeatures = {f'Boxplot {i}': np.random.normal(loc=i, scale=1, size=num_data_points).tolist()
+                                         for i in range(num_boxplot)}
         # content components
         self.DashboardTitle = ''
         self.DashboardTileTexts = ["3 countries", "5 institutions", "1814 patients"]
@@ -87,6 +92,8 @@ class Dashboard:
                                        'roo:P100219': 'AJCC Stage',
                                        'roo:P100202': 'Tumour Location',
                                        'roo:P100231': 'Therapy given'}
+
+        self.rad_options = self.read_rad_features()
 
         # refers to <folder_with_this_file>/assets/dashboard_aesthetics.css
         self.App = dash.Dash(__name__, external_stylesheets=['dashboard_aesthetics.css'])
@@ -107,14 +114,15 @@ class Dashboard:
                         html.Button('Submit', id='login-button', n_clicks=0, className='login-button')
                     ]),
                     # Welcome message
-                    dcc.Markdown(id='welcome-message', className='welcome-message white-text', children=[], style={'font-family': GLOBAL_FONT}),
+                    dcc.Markdown(id='welcome-message', className='welcome-message white-text', children=[],
+                                 style={'font-family': GLOBAL_FONT}),
                 ]),
             ]),
 
-           # html.Div([
-                # Text tiles
-           #     html.Div(id='dashboard', className='dashboard', children=[
-           #         html.H5(id='dashboard-title', className='dashboard-title', children=self.DashboardTitle),
+            # html.Div([
+            # Text tiles
+            #     html.Div(id='dashboard', className='dashboard', children=[
+            #         html.H5(id='dashboard-title', className='dashboard-title', children=self.DashboardTitle),
 
             #        html.Div(id='tile-1', className='tile', children=[
             #            html.Div(id='tile-content-1', className='tile-content', children=self.DashboardTileTexts[0])
@@ -135,7 +143,8 @@ class Dashboard:
                 html.Div(id='auth-lock', className='authentication-lock',
                          children='Please log in on the top left to explore the data'),
                 html.Div([
-                    html.Label("Select organization:", style={'textAlign': 'center', 'fontSize': '23px', 'font-family': GLOBAL_FONT}),
+                    html.Label("Select organization:",
+                               style={'textAlign': 'center', 'fontSize': '23px', 'font-family': GLOBAL_FONT}),
                     dcc.Checklist(
                         id='institution-checklist',
                         options=[{'label': organisation, 'value': organisation} for organisation in
@@ -144,12 +153,10 @@ class Dashboard:
                         className='organisation-checklist',
                         inline=True
                     ),
-                ], style={'textAlign': 'center', 'width': '100%', 'margin': '0 auto', 'marginTop': '20px', 'fontSize': '20px', 'font-family': GLOBAL_FONT}),
+                ], style={'textAlign': 'center', 'width': '100%', 'margin': '0 auto', 'marginTop': '20px',
+                          'fontSize': '20px', 'font-family': GLOBAL_FONT}),
 
-                # Tabs
-                #dcc.Tabs(id='tabs', className='graphing-options', value='tab-pie', children=[
-                #    dcc.Tab(label='Data summary', className='graph', value='tab-pie', children=[
-                html.Div(style={'display': 'flex'}, children= [
+                html.Div(style={'display': 'flex'}, children=[
                     html.Div([
                         dcc.Dropdown(
                             id='dataset-variable',
@@ -159,42 +166,62 @@ class Dashboard:
                                      self.pie_dropdown_variables.items()],
                             clearable=False,
                             className='pie-drop-down'),
-                    html.Div(id='tab-pie-content', className='graph-content'),
-                ], style={'display': 'flex', 'flexDirection': 'column', 'width': '50%'}),
+                        html.Div(id='tab-pie-content', className='graph-content'),
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'width': '50%'}),
 
-                # Bar chart graph
-                html.Div(id='tab-bar-content', className='graph-content', style={'width': '50%'}),
-                    ]),
+                    # Bar chart
+                    html.Div(id='tab-bar-content', className='graph-content', style={'width': '50%'}),
+                ]),
 
-                # dcc.Tab(label='Scatter plot', className='graph', value='tab-scatter'),
-                #dcc.Tab(label='Scanner summary', className='graph', value='tab-bar'),
+                html.Br(),  # This creates a line break
+                html.Div(style={'display': 'flex'}, children=[
+                    html.Div([
+                        dcc.Dropdown(
+                            id='box-plot-dropdown',
+                            options=[{'label': option, 'value': option} for option in self.rad_options],
+                            # The options will be populated dynamically
+                            value='Fmorph.sph.sphericity',  # The initial value of the dropdown
+                            clearable=False,
+                            searchable=True,  # Make the dropdown searchable
+                            className='box-plot-drop-down',
+                            style={'width': '50%'}),
+                        html.Div(id='box-plot-content', className='graph-content'),
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'width': '100%'}),
+                ]),
 
-
-                # Tab content
-                #html.Div(id='tab-content', className='graph-content'),
                 html.Div(id='query-trigger-not-for-display'),
 
                 # Display the heatmap below the tabs
-                html.Div([
+                html.Br(),  # This creates a line break
+                html.Div(className='graph-shadow', children=[
                     html.Div([
                     ], style={'flex': '1'}),
                     html.Div([
                         html.Br(),
-                        html.Br(),
-                        html.Label("Select ROI for heatmap:", style={'fontSize': '21px', 'font-family': GLOBAL_FONT}),
+                        html.Label("Select ROI for heatmap:", style={'fontSize': '18px', 'font-family': GLOBAL_FONT}),
                         dcc.RadioItems(
                             id='roi-checklist',
                             options=[{'label': roi_label, 'value': roi_value} for roi_label, roi_value in
                                      self.roi_names.items()],
                             value=tuple(self.roi_names.values())[0],  # Initially select first
-                            style={'marginRight': '20px', 'marginTop': '22px', 'fontSize': '18px', 'font-family': GLOBAL_FONT},  # Add some spacing between checkboxes,
+                            style={'marginRight': '50px', 'marginTop': '10px', 'fontSize': '16px',
+                                   'font-family': GLOBAL_FONT},  # Add some spacing between checkboxes,
+                            inline=True  # Display the options horizontally
                         ),
-                    ], style={'flex': '0.4', 'fontSize': '18px', 'font-family': GLOBAL_FONT, 'background-color': '#f9f4ea'}),
-                ], style={'display': 'flex', 'flexDirection': 'row', 'vertical-align': 'top', 'background-color': '#f9f4ea'}),
+                    ], style={'marginLeft': '15px','fontSize': '18px', 'font-family': GLOBAL_FONT,
+                              'background-color': 'whitesmoke'}),
+                    html.Div(id='heatmap-content', className='graph-content'),
+                ], style={'background-color': 'whitesmoke'}),
 
-                html.Div(id='heatmap-content'),
             ])
         ])
+
+    def read_rad_features(self):
+        with open('rad_features', 'r') as file:
+            features = file.readlines()
+        # Remove any newline characters
+        features = [feature.rstrip() for feature in features]
+        return features
 
     def register_callbacks(self):
         """"""
@@ -253,58 +280,147 @@ class Dashboard:
 
         @self.App.callback(
             [Output('tab-pie-content', 'children'),
-            Output('tab-bar-content', 'children')],
+             Output('tab-bar-content', 'children')],
             Input('query-trigger-not-for-display', 'children'),
             #Input('tabs', 'value'),
             Input("dataset-variable", "value"))
         def render_content(query_trigger, dataset_variable):
             """
-            to complete
-
-            :param any query_trigger:
-            :param str tab:
-            :param str dataset_variable:
+            :param any query_trigger: trigger to ensure that the callback is executed
+            :param str dataset_variable: variable to be displayed in the pie chart
             :return:
             """
-            #if tab == 'tab-pie':
             # retrieve the data that is to be rendered
             filtered_data = self._retrieve_counts_to_render(dataset_variable)
 
-            # assign random colors to each category
-            #unique_categories = filtered_data['Categories'].nunique()
-            #color_sequence = [generate_random_color() for _ in range(unique_categories)]
             color_sequence = ["#4B0082", "#D8BFD8"]  # Two shades of purple
 
             # create a pie chart
             fig_pie = px.pie(filtered_data, names='Categories', values='Values',
-                         color_discrete_sequence=color_sequence)
+                             color_discrete_sequence=color_sequence)
             fig_pie.update_layout(
                 plot_bgcolor='lightgrey',
-                paper_bgcolor='#f9f4ea',
-                font=dict(family=GLOBAL_FONT)
+                paper_bgcolor='whitesmoke',
+                font=dict(family=GLOBAL_FONT),
+                title=dict(
+                    text='Distribution of clinical variables',
+                    y=0.92,  # position of the title
+                    x=0.5,  # position of the title
+                    xanchor='center',  # anchor the x position
+                    yanchor='top',  # anchor the y position
+                    font=dict(size=20, family=GLOBAL_FONT)  # font size of the title
+                ),
             )
             pie_chart = dcc.Graph(figure=fig_pie, className='graph-shadow')
 
-            # elif tab == 'tab-scatter':
-            #     Create a scatter plot
-            # fig = px.scatter(filtered_data, x='X', y='Y', title=dataset_variable)
-
-            #elif tab == 'tab-bar':
-            # retrieve the data that is to be rendered
             bar_data = self._retrieve_scanners_to_render()
 
             # create a bar chart
             fig_bar = px.bar(bar_data, x='Scanners', y='Counts',
-                         color_discrete_sequence=self.ColourSchemeCategorical)
+                             color_discrete_sequence=self.ColourSchemeCategorical)
             fig_bar.update_layout(
                 plot_bgcolor='lightgrey',
-                paper_bgcolor='#f9f4ea',
-                font=dict(family=GLOBAL_FONT)
+                paper_bgcolor='whitesmoke',
+                font=dict(family=GLOBAL_FONT),
+                title=dict(
+                    text='Scanner count',
+                    y=0.92,  # position of the title
+                    x=0.5,  # position of the title
+                    xanchor='center',  # anchor the x position
+                    yanchor='top',  # anchor the y position
+                    font=dict(size=20, family=GLOBAL_FONT)  # font size of the title
+                ),
             )
 
             bar_chart = dcc.Graph(figure=fig_bar, className='graph-shadow')
 
             return pie_chart, bar_chart
+
+        # Define the mapping dictionary
+        OrganisationIdToName = {2: 'HN1_Maastro', 3: 'Montreal', 4: 'Toronto', 5: 'HN3_Maastro', 7: 'HCG', 8: 'TMH'}
+
+        # Define the callback function for the box plot
+        @self.App.callback(
+            Output('box-plot-content', 'children'),
+            Input('query-trigger-not-for-display', 'children'),
+            Input("box-plot-dropdown", "value"))
+        def render_box_plot(query_trigger, box_plot_dropdown):
+            """
+            :param query_trigger: trigger to ensure that the callback is executed
+            :param box_plot_dropdown: variable to be displayed in the box plot
+            :return:
+            """
+            # Retrieve the data that is to be rendered
+            if not self.Organisations_ids_to_query:
+                box_plot_data = self._PlaceholderDataFeatures
+                # Create a dummy  box plot
+                fig_box = px.box(box_plot_data)
+
+            else:
+                box_data_dict = self._retrieve_features_to_render(box_plot_dropdown)
+                # Create a DataFrame to hold the box plot data
+                box_plot_data = pd.DataFrame(columns=['Value', 'Organization'])
+
+                for org_id, stats_list in box_data_dict.items():
+                    for stats in stats_list:
+                        # Create a list of values that represent the box plot
+                        values = [stats['min'], stats['q1'], stats['median'], stats['median'], stats['q3'], stats['max']]
+                        values.extend(stats['outliers'])  # Add the outliers
+
+                        # Create a DataFrame from these values
+                        df = pd.DataFrame({
+                            'Value': values,
+                            'Organization': [org_id] * len(values)
+                        })
+
+                        # Append this DataFrame to the box plot data
+                        box_plot_data = box_plot_data.append(df, ignore_index=True)
+
+                # Normalize the 'Value' column
+                box_plot_data['Value'] = (box_plot_data['Value'] - box_plot_data['Value'].min()) / (
+                            box_plot_data['Value'].max() - box_plot_data['Value'].min())
+
+                # Replace organization IDs with names
+                box_plot_data['Organization'] = box_plot_data['Organization'].map(OrganisationIdToName)
+
+                # Create a box plot
+                fig_box = px.box(box_plot_data, x='Organization', y='Value')
+
+                # Calculate median values for each organization
+                ## Uncomment this code to add median annotations to the box plot
+                #medians = box_plot_data.groupby('Organization')['Value'].median().round(2)
+
+                # Add median annotations to the boxplot
+                #for org, median in medians.items():
+                #    fig_box.add_annotation(
+                #        x=org,
+                #        y=median,
+                #        text=f'{median}',
+                #        showarrow=False,
+                #        font=dict(
+                #            size=10,
+                #            color="black"
+                #        ),
+                #       xanchor='center',
+                #        yanchor='bottom',
+                #        bgcolor='whitesmoke'
+                #    )
+
+            fig_box.update_layout(
+                plot_bgcolor='lightgrey',
+                paper_bgcolor='whitesmoke',
+                font=dict(family=GLOBAL_FONT),
+                title=dict(
+                    text=f'Comparative box plots of Radiomic features across organizations - ({box_plot_dropdown})',
+                    y=0.92,  # position of the title
+                    x=0.5,  # position of the title
+                    xanchor='center',  # anchor the x position
+                    yanchor='top',  # anchor the y position
+                    font=dict(size=20, family=GLOBAL_FONT)  # font size of the title
+                ),
+            )
+
+            return dcc.Graph(figure=fig_box, className='graph-shadow')
 
         @self.App.callback(
             Output('heatmap-content', 'children'),
@@ -312,25 +428,22 @@ class Dashboard:
             Input("roi-checklist", "value"))
         def render_heatmap(query_trigger, roi_checklist):
             heatmap_data = self._retrieve_heatmap_to_render(roi_checklist)
-            # Check if the matrix is larger than 50x50
-            #if heatmap_data.shape[0] > 50 or heatmap_data.shape[1] > 50:
-                # Reduce the matrix to the first 50 rows and columns
-            #    heatmap_data = heatmap_data.iloc[:50, :50]
-            # Assuming heatmap_data is your DataFrame
+            # cluster the data
             pairwise_distances = sch.distance.pdist(heatmap_data)
             linkage = sch.linkage(pairwise_distances, method='complete')
             cluster_distance_threshold = pairwise_distances.max() / 2
             idx_to_cluster_array = sch.fcluster(linkage, cluster_distance_threshold,
                                                 criterion='distance')
             idx = np.argsort(idx_to_cluster_array)
-
+            # reorder the data
             if isinstance(heatmap_data, pd.DataFrame):
                 heatmap_data_ordered = heatmap_data.iloc[idx, :].T.iloc[idx, :]
             heatmap_data_ordered = heatmap_data.iloc[idx, :].iloc[:, idx]
 
             # Custom color scale
             color_scale = ["rgb(0,0,255)", "rgb(211,211,211)", "rgb(255,0,0)"]  # blue, grey, red
-            fig_heatmap = px.imshow(heatmap_data_ordered, y=heatmap_data_ordered.columns, text_auto=False, aspect="auto",
+            fig_heatmap = px.imshow(heatmap_data_ordered, y=heatmap_data_ordered.columns, text_auto=False,
+                                    aspect="auto",
                                     title='Correlation Heatmap', color_continuous_scale=color_scale)
 
             # Increase the title font size to 24 and the y-axis labels font size to 12
@@ -338,17 +451,17 @@ class Dashboard:
                 coloraxis_colorbar=dict(
                     tickvals=[-1, 0, 1],  # specify the values
                     ticktext=['-1', '0', '1'],  # specify the labels
-                    len=0.5,    # specify the length of the color bar as a fraction of the plot area
+                    len=0.5,  # specify the length of the color bar as a fraction of the plot area
                     yanchor="top",  # anchor the color bar at the top
                     y=1  # position the color bar at the top of the plot area
                 ),
                 title=dict(
-                    text='Correlation Heatmap',
-                    y=0.9,  # position of the title
+                    text='Correlation heatmap of Radiomic features',
+                    y=0.92,  # position of the title
                     x=0.5,  # position of the title
                     xanchor='center',  # anchor the x position
                     yanchor='top',  # anchor the y position
-                    font=dict(size=24, family=GLOBAL_FONT)  # font size of the title
+                    font=dict(size=20, family=GLOBAL_FONT)  # font size of the title
                 ),
                 font=dict(family=GLOBAL_FONT)
             )
@@ -362,11 +475,11 @@ class Dashboard:
             )
             fig_heatmap.update_layout(
                 plot_bgcolor='lightgrey',
-                paper_bgcolor='#f9f4ea',
+                paper_bgcolor='whitesmoke',
                 font=dict(family=GLOBAL_FONT)
             )
-            return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'}, className='graph-shadow')
-
+            #return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'}, className='graph-shadow')
+            return dcc.Graph(figure=fig_heatmap, style={'height': '800px', 'width': '100%'})
 
     def run(self, debug=None, port=8050):
         """
@@ -464,6 +577,26 @@ class Dashboard:
         bar_data = self.PlaceholderDataframeScanners[self.PlaceholderDataframeScanners['HashIdentifier'] ==
                                                      miscellaneous.hash_information(self.Organisations_ids_to_query)]
         return bar_data
+
+    def _retrieve_features_to_render(self, box_plot_dropdown):
+        """
+        Retrieve counts of given variable, either from data already existing in the placeholder, or by querying Vantage6
+
+        :param str dataset_variable: name or predicate of the variable to query
+        :return: pandas.DataFrame consisting of the counts of the desired variable
+        """
+
+        # do not attempt to query dummy data; the [] and [0] represent the default filter and organisation state
+        # collect the data that is to be queried
+        box_data = {}
+        for org_id in self.Organisations_ids_to_query:
+            query_name = f'Dashboard request of radiomic features for {org_id}'
+            self.Vantage6User.compute_features_sparql(name=query_name,
+                                                      feature=box_plot_dropdown,
+                                                      organisation_ids=[org_id],
+                                                      save_results=False)
+            box_data[org_id] = self.Vantage6User.Results[query_name]
+        return box_data
 
     def _retrieve_heatmap_to_render(self, roi_checklist):
         """

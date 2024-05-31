@@ -464,6 +464,42 @@ class Vantage6Client:
 
         self.Tasks.update({name: task})
 
+    def compute_features_sparql(self, feature, collaboration=None, organisation_ids=None, name=None,
+                                description=None, check_results=True, save_results=True):
+        """"""
+
+        if isinstance(collaboration, int) is False:
+            collaboration = 1
+
+        if name is None:
+            name = f'Radiomics feature values - SPARQL'
+
+        if description is None:
+            description = 'Retrieve the features and their values using a SPARQL query'
+
+        input_features_sparql = {'method': 'master',
+                                 'master': True,
+                                 'kwargs': {'feature': feature,
+                                            'organization_ids': organisation_ids}}
+
+        # Sending the analysis task to the server
+        task = self.Client.task.create(collaboration=collaboration,
+                                       organizations=[2],
+                                       name=name,
+                                       description=description,
+                                       image='varshagouthamchand/sparql_rad_features:latest',
+                                       input=input_features_sparql,
+                                       data_format='json',
+                                       database='rdf')
+
+        if check_results:
+            filename = None
+            if save_results:
+                filename = f'scan.json'
+            self.retrieve_results(task, name, filename)
+
+        self.Tasks.update({name: task})
+
     def compute_hm_sparql(self, expl_vars, censor_col, roitype, organisation_ids=None, collaboration=None,
                           description=None, name=None, check_results=True, save_results=True):
         """"""
@@ -519,7 +555,7 @@ class Vantage6Client:
 
         output_data = result_info['data'][0]['result']
 
-        print(f'\n################################\nResult of query: {output_data}\n################################\n')
+        #print(f'\n################################\nResult of query: {output_data}\n################################\n')
 
         self.Results.update({name: output_data})
 

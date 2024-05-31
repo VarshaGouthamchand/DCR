@@ -7,7 +7,7 @@ html {
 body {
     min-height: 100%;
     margin: 0;
-    background: linear-gradient(to bottom, #f9f4ea, #ffffff);
+    background: whitesmoke;
 }
 
 .primary-header {
@@ -118,10 +118,20 @@ body {
     alignment: center;
 }
 
+.box-plot-drop-down {
+    width: 60%;
+    z-index: 5;
+    background: transparent;
+    margin: inherit;
+    display: flex;
+    position: absolute;
+    alignment: center;
+}
+
 .authentication-lock {
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black/grey background */
+    #background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black/grey background */
     border-radius: 10px;
-    color: white;
+    color: #2d2c2c;
     font-size: 18px;
     text-align: center;
     width: 100%;
